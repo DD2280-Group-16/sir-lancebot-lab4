@@ -7,7 +7,7 @@ class GitHubStats(Cog):
     def __init__(self, bot: Bot) -> None:
         self.bot = bot
 
-    @command(name="github_stats")
+    @command(name="gh-stats")
     async def ping(self, ctx: Context, repo: str = "python-discord/bot") -> None:
         """
         Fetches stats for a GitHub repo.
