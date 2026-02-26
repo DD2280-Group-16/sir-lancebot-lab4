@@ -60,7 +60,7 @@ class GitHubStats(Cog):
 
         async with self.bot.http_session.get(url, headers=headers, params=params) as response:
             if response.status != 200:
-                return 0
+                return -1
 
             data = await response.json()
             return data.get("total_count", 0)
