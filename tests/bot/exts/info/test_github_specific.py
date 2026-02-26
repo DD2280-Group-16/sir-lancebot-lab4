@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 # from bot.exts.info import github_stats
 from tests.helpers import MockBot, MockContext
@@ -13,12 +13,13 @@ class GitHubStatsCogRepoExistenceTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         self.bot = MockBot()
         #self.cog = github_stats.Stats(self.bot)
+        self.bot.http_session = MagicMock()
         self.ctx = MockContext(bot=self.bot)
 
     async def test_repo_exists_returns_false_for_non_existent_repo(self):
         """If the GitHub API responds with 404 or raises an exception, repo_exists should return False."""
 
-        self.bot.api_client.get = AsyncMock(side_effect=Exception("404 Not Found"))
+        self.bot.http_session.get = AsyncMock(side_effect=Exception("404 Not Found"))
 
         result = await self.cog.repo_exist("owner/non-existent-repo")
 
@@ -26,7 +27,7 @@ class GitHubStatsCogRepoExistenceTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_repo_exists_returns_true_for_existent_repo(self):
         """If the GitHub API responds with JSON, repo_exists should return True."""
-        self.bot.api_client.get = AsyncMock(return_value={"id":1, "name": "test"})
+        self.bot.http_session.get = AsyncMock(return_value={"id":1, "name": "test"})
 
         result = await self.cog.repo_exists("owner/test")
         self.assertTrue(result)
@@ -56,6 +57,7 @@ class GitHubStatsCogRepoExistenceTests(unittest.IsolatedAsyncioTestCase):
 class GitHubStatsCogStatsTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         self.bot = MockBot()
+        self.bot.http_session = MagicMock()
         #self.cog = github_stats.Stats(self.bot)
         self.ctx = MockContext(bot=self.bot)
 
@@ -80,7 +82,7 @@ class GitHubStatsCogStatsTests(unittest.IsolatedAsyncioTestCase):
         self.cog.get_stars_count = AsyncMock(return_value=100)
         self.cog.get_new_contributors_count = AsyncMock(return_value=10)
         # Valid repo
-        self.bot.api_client.get = AsyncMock(return_value={"id":1, "name": "test"})
+        self.bot.http_session.get = AsyncMock(return_value={"id":1, "name": "test"})
 
         await self.cog.github_stats(self.ctx, "2025-04-01", "2025-04-11", "owner/test")
         # Asserts that ctx was called with the correct message
