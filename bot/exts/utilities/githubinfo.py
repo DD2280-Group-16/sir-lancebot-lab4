@@ -32,7 +32,7 @@ if Tokens.github:
     REQUEST_HEADERS["Authorization"] = f"token {Tokens.github.get_secret_value()}"
 
 CODE_BLOCK_RE = re.compile(
-    r"^`([^`\n]+)`"  # Inline codeblock
+    r"`([^`\n]+)`"  # Inline codeblock
     r"|```(.+?)```",  # Multiline codeblock
     re.DOTALL | re.MULTILINE,
 )
