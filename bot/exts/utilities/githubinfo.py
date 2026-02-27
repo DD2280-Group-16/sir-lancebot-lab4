@@ -357,6 +357,29 @@ class GithubInfo(commands.Cog):
             data = await response.json()
             return data.get("total_count", 0)
 
+    async def get_pr_count(self, repo: str, start: str, end: str, action: str) -> int:
+        """Gets the number of PRs opened, closed, or merged in a given timeframe."""
+        url = f"{GITHUB_API_URL}/search/issues"
+
+        if action == "opened":
+            state_query = f"created:{start}..{end}"
+        elif action == "merged":
+            state_query = f"is:merged merged:{start}..{end}"
+        elif action == "closed":
+            state_query = f"is:unmerged closed:{start}..{end}"
+        else:
+            return 0
+
+        query = f"repo:{repo} is:pr {state_query}"
+        params = {"q": query}
+
+        async with self.bot.http_session.get(url, headers=REQUEST_HEADERS, params=params) as response:
+            if response.status != 200:
+                return -1
+
+            data = await response.json()
+            return data.get("total_count", 0)
+
     @github_group.command(name="stats")
     async def github_stats(
         self, ctx: commands.Context, start: str, end: str, repo: str = "python-discord/sir-lancebot"
