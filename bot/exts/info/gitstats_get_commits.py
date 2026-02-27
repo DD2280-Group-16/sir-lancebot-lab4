@@ -34,6 +34,10 @@ class GitStatsGetCommitsMethod:
             )
             
             async with self.bot.http_session.get(url, headers=headers) as response:
+                
+                if response.status != 200:
+                    return -1
+                
                 commits_json = await response.json()
                 # GitHub API responds with a JSON list of commits
                 # and we add the number of items in the list to count
