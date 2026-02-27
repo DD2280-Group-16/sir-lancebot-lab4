@@ -380,6 +380,29 @@ class GithubInfo(commands.Cog):
             data = await response.json()
             return data.get("total_count", 0)
 
+    async def get_commit_count(self, repo_str: str, start_str: str, end_str: str) -> int:
+        """Returns the number of commits done to the given repo between the start and end date."""
+        start_iso = f"{start_str}T00:00:00Z"
+        end_iso = f"{end_str}T23:59:59Z"
+
+        url = f"https://api.github.com/repos/{repo_str}/commits"
+        params = {"since": start_iso, "until": end_iso, "per_page": 1, "page": 1}
+
+        async with self.bot.http_session.get(url, headers=REQUEST_HEADERS, params=params) as response:
+            if response.status != 200:
+                return -1
+
+            commits_json = await response.json()
+            if not commits_json:
+                return 0
+
+            if "last" in response.links:
+                last_url = str(response.links["last"]["url"])
+                return int(last_url.split("page=")[-1])
+
+            # If there's no 'last' link but we have commits, it must be exactly 1
+            return 1
+
     @github_group.command(name="stats")
     async def github_stats(self, ctx: commands.Context, start: str, end: str, repo: str) -> None:
         """
@@ -405,6 +428,7 @@ class GithubInfo(commands.Cog):
             prs_opened = await self.get_pr_count(repo, start, end, "opened")
             prs_closed = await self.get_pr_count(repo, start, end, "closed")
             prs_merged = await self.get_pr_count(repo, start, end, "merged")
+            commits = await self.get_commit_count(repo, start, end)
 
             stats_embed = discord.Embed(
                 title=f"Stats for {repo}",
@@ -418,7 +442,7 @@ class GithubInfo(commands.Cog):
                 f"Pull Requests closed: {prs_closed}\n"
                 f"Pull Requests merged: {prs_merged}\n"
                 # f"**Stars gained:** {stars}\n"
-                # f"**Commits:** {commits}"
+                f"Commits: {commits}"
             )
 
             stats_embed = discord.Embed(
