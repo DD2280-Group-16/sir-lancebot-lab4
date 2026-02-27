@@ -64,7 +64,21 @@ class GitHubStats(Cog):
 
             data = await response.json()
             return data.get("total_count", 0)
+            
+    async def get_star_count(self, repo: str) -> int:
+        """
+        Gets the number of stars for a given repository.
+        """
+        url = f"{GITHUB_API_URL}/repos/{repo}"
+        headers = {"Authorization": f"token {Tokens.github.get_secret_value()}"}
 
+        async with self.bot.http_session.get(url, headers=headers) as response:
+            if response.status != 200:
+                # We could not get the data from the API default to -1 
+                return -1
+
+            data = await response.json()
+            return data.get("stargazers_count")
 
 async def setup(bot: Bot) -> None:
     await bot.add_cog(GitHubStats(bot))
