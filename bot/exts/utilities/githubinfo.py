@@ -373,7 +373,7 @@ class GithubInfo(commands.Cog):
             if "message" in repo_data:
                 embed = discord.Embed(
                     title=random.choice(NEGATIVE_REPLIES),
-                    description=f"❌ Could not find repository: `{repo}`",
+                    description=f"Could not find repository: `{repo}`",
                     colour=Colours.soft_red,
                 )
                 await ctx.send(embed=embed)
