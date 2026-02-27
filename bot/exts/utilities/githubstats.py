@@ -21,9 +21,10 @@ class GitHubStats(Cog):
 
         open = await self.get_issue_count(repo, start, end, state="created")
         closed = await self.get_issue_count(repo, start, end, state="closed")
+        stars_gained = await self.get_stars_gained(repo, start, end)
 
         stats_message = (
-            f"Stats for **{repo}** ({start} to {end}):\n" f"Issues opened: {open}\n" f"Issues closed: {closed}"
+            f"Stats for **{repo}** ({start} to {end}):\n" f"Issues opened: {open}\n" f"Issues closed: {closed}\n" f"Stars gained: +{stars_gained}\n"
         )
         await ctx.send(stats_message)
 
@@ -65,6 +66,36 @@ class GitHubStats(Cog):
             data = await response.json()
             return data.get("total_count", 0)
 
+    async def get_stars_gained(self, repo: str, start: str, end: str) -> int:
+        """Gets the number of stars gained for a given repository in a timeframe.
+        Args:
+            repo (str): The repository name in 'owner/repo' format (e.g., 'python-discord/bot').
+            start (str): The start date (e.g., 2023-01-01).
+            end (str): The end date (e.g., 2023-12-31).
+        """
+        url = f"{GITHUB_API_URL}/repos/{repo}/stargazers"
+        headers = {
+            "Authorization": f"token {Tokens.github.get_secret_value()}",
+            "Accept": "application/vnd.github.star+json",
+        }
+        count = 0
+        page = 1
+        per_page = 100
 
+        while True:
+            params = {"per_page": per_page, "page": page}
+            async with self.bot.http_session.get(url, headers=headers, params=params) as response:
+                if response.status != 200:
+                    return -1
+                data = await response.json()
+                if not data:
+                    break
+                # starred_at is in format YYYY-MM-DDTHH:MM:SSZ so we can just get the first 10 characters to get the date
+                count += sum(1 for star in data if start <= star.get("starred_at", "")[:10] <= end)
+                if len(data) < per_page:
+                    break
+                page += 1
+
+        return count
 async def setup(bot: Bot) -> None:
     await bot.add_cog(GitHubStats(bot))
