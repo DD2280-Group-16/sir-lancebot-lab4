@@ -404,15 +404,28 @@ class GithubInfo(commands.Cog):
 
             open_issues = await self.get_issue_count(repo, start, end, state="created")
             closed_issues = await self.get_issue_count(repo, start, end, state="closed")
+            prs_opened = await self.get_pr_count(repo, start, end, "opened")
+            prs_closed = await self.get_pr_count(repo, start, end, "closed")
+            prs_merged = await self.get_pr_count(repo, start, end, "merged")
 
             stats_embed = discord.Embed(
                 title=f"Stats for {repo}",
                 description=f"Timeframe: `{start}` to `{end}`",
                 colour=Colours.grass_green,
             )
-            stats_embed.add_field(name="Issues opened: ", value=str(open_issues))
-            stats_embed.add_field(name="Issues closed: ", value=str(closed_issues))
+            stats_text = (
+                f"Issues opened: {open_issues}\n"
+                f"Issues closed: {closed_issues}\n"
+                f"Pull Requests opened: {prs_opened}\n"
+                f"Pull Requests closed: {prs_closed}\n"
+                f"Pull Requests merged: {prs_merged}\n"
+                # f"**Stars gained:** {stars}\n"
+                # f"**Commits:** {commits}"
+            )
 
+            stats_embed = discord.Embed(
+                title=f"Stats for {repo}", description=stats_text, colour=discord.Colour.og_blurple()
+            )
             await ctx.send(embed=stats_embed)
 
     @github_group.command(name="repository", aliases=("repo",))
