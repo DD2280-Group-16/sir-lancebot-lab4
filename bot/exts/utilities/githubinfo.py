@@ -381,9 +381,7 @@ class GithubInfo(commands.Cog):
             return data.get("total_count", 0)
 
     @github_group.command(name="stats")
-    async def github_stats(
-        self, ctx: commands.Context, start: str, end: str, repo: str = "python-discord/sir-lancebot"
-    ) -> None:
+    async def github_stats(self, ctx: commands.Context, start: str, end: str, repo: str) -> None:
         """
         Fetches stats for a GitHub repo.
 
