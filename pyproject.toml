@@ -104,3 +104,4 @@ combine-as-imports = true
 # This stops pytest from running functions named `setup` in test files.
 # See https://github.com/python-discord/bot/pull/2229#issuecomment-1204436420
 addopts = "-p no:nose"
+pythonpath = ["."]
