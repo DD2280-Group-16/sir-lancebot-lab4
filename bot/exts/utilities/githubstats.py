@@ -1,5 +1,5 @@
-from discord.ext.commands import Cog, command, Context
-from bot.constants import Tokens
+from discord.ext.commands import Cog, Context, command
+
 from bot.bot import Bot
 from math import ceil
 GITHUB_API_URL = "https://api.github.com"
@@ -13,10 +13,10 @@ class GitHubStats(Cog):
     async def github_stats(self, ctx: Context, start: str, end: str, repo: str = "python-discord/sir-lancebot") -> None:
         """
         Fetches stats for a GitHub repo.
-        Usage: !github_stats 2023-01-01 2023-12-31 python-discord/bot
+        Usage: !github_stats 2023-01-01 2023-12-31 python-discord/bot.
         """
         if not await self.repo_exists(repo):
-            await ctx.send(f"❌ Could not find repository: `{repo}`")
+            await ctx.send(f"Could not find repository: `{repo}`")
             return
 
         open = await self.get_issue_count(repo, start, end, state="created")
