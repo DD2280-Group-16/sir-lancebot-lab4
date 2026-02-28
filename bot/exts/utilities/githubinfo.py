@@ -494,32 +494,18 @@ class GithubInfo(commands.Cog):
         except ValueError:
             return None
 
-
     def validate_date_format(self, date_str: str) -> bool:
         """Validates that the date string is formatted correctly."""
         return self.parse_date(date_str) is not None
 
-
     def validate_date_range(self, start_date: str, end_date: str) -> bool:
-        """
-        Validate a date range for correctness and logical ordering.
-
-        Args:
-            start_date (str): The start date in YYYY-MM-DD format.
-            end_date (str): The end date in YYYY-MM-DD format.
-
-        Returns:
-            bool: True if the date range is valid, otherwise False.
-        """
+        """Validate a date range for correctness and logical ordering."""
         start = self.parse_date(start_date)
         end = self.parse_date(end_date)
 
-        time_now = datetime.now(UTC)
-
-        if start > end:
-            return False
-
-        return not end > time_now
+        if start and end:
+            return start <= end
+        return False
 
     @github_group.command(name="stats")
     async def github_stats(self, ctx: commands.Context, start: str, end: str, repo: str) -> None:
@@ -529,6 +515,35 @@ class GithubInfo(commands.Cog):
         Usage: !github_stats 2023-01-01 2023-12-31 python-discord/bot.
         """
         async with ctx.typing():
+            # Validate the date first to spare API calls
+            if not self.validate_date_format(start):
+                embed = discord.Embed(
+                    title=random.choice(NEGATIVE_REPLIES),
+                    description="Start date must be in YYYY-MM-DD format.",
+                    colour=Colours.soft_red,
+                )
+                await ctx.send(embed=embed)
+
+                return
+
+            if not self.validate_date_format(end):
+                embed = discord.Embed(
+                    title=random.choice(NEGATIVE_REPLIES),
+                    description="End date must be in YYYY-MM-DD format.",
+                    colour=Colours.soft_red,
+                )
+                await ctx.send(embed=embed)
+                return
+
+            if not self.validate_date_range(start, end):
+                embed = discord.Embed(
+                    title=random.choice(NEGATIVE_REPLIES),
+                    description="Invalid date range.",
+                    colour=Colours.soft_red,
+                )
+                await ctx.send(embed=embed)
+                return
+
             url = f"{GITHUB_API_URL}/repos/{repo}"
             repo_data, response = await self.fetch_data(url)
 
@@ -540,17 +555,6 @@ class GithubInfo(commands.Cog):
                 )
                 await ctx.send(embed=embed)
                 return
-
-            if not self.validate_date_format(start):
-                await ctx.send("Start date must be in YYYY-MM-DD format.")
-                return
-
-            if not self.validate_date_format(end):
-                await ctx.send("End date must be in YYYY-MM-DD format.")
-                return
-
-            if not self.validate_date_range_and_format(start, end):
-                await ctx.send("Invalid date range.")
 
             open_issues = await self.get_issue_count(repo, start, end, state="created")
             closed_issues = await self.get_issue_count(repo, start, end, state="closed")
