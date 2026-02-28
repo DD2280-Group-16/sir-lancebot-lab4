@@ -487,6 +487,40 @@ class GithubInfo(commands.Cog):
 
         return right - left + 1
 
+    def parse_date(self, date_str: str) -> datetime | None:
+        """Parse a YYYY-MM-DD date string into a UTC datetime."""
+        try:
+            return datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=UTC)
+        except ValueError:
+            return None
+
+
+    def validate_date_format(self, date_str: str) -> bool:
+        """Validates that the date string is formatted correctly."""
+        return self.parse_date(date_str) is not None
+
+
+    def validate_date_range(self, start_date: str, end_date: str) -> bool:
+        """
+        Validate a date range for correctness and logical ordering.
+
+        Args:
+            start_date (str): The start date in YYYY-MM-DD format.
+            end_date (str): The end date in YYYY-MM-DD format.
+
+        Returns:
+            bool: True if the date range is valid, otherwise False.
+        """
+        start = self.parse_date(start_date)
+        end = self.parse_date(end_date)
+
+        time_now = datetime.now(UTC)
+
+        if start > end:
+            return False
+
+        return not end > time_now
+
     @github_group.command(name="stats")
     async def github_stats(self, ctx: commands.Context, start: str, end: str, repo: str) -> None:
         """
@@ -506,6 +540,17 @@ class GithubInfo(commands.Cog):
                 )
                 await ctx.send(embed=embed)
                 return
+
+            if not self.validate_date_format(start):
+                await ctx.send("Start date must be in YYYY-MM-DD format.")
+                return
+
+            if not self.validate_date_format(end):
+                await ctx.send("End date must be in YYYY-MM-DD format.")
+                return
+
+            if not self.validate_date_range_and_format(start, end):
+                await ctx.send("Invalid date range.")
 
             open_issues = await self.get_issue_count(repo, start, end, state="created")
             closed_issues = await self.get_issue_count(repo, start, end, state="closed")
