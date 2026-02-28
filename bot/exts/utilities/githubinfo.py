@@ -393,15 +393,99 @@ class GithubInfo(commands.Cog):
                 return -1
 
             commits_json = await response.json()
+            # No commits
             if not commits_json:
                 return 0
 
-            if "last" in response.links:
-                last_url = str(response.links["last"]["url"])
-                return int(last_url.split("page=")[-1])
+            link_header = response.headers.get("Link")
+            # No link header means only one page
+            if not link_header:
+                return 1
 
-            # If there's no 'last' link but we have commits, it must be exactly 1
+            # Grabbing the number of pages from the Link header
+            match = re.search(r'page=(\d+)>; rel="last"', link_header)
+
+            if match:
+                return int(match.group(1))
+
             return 1
+
+    async def _fetch_page(self, url: str, headers: dict, page: int, cache: dict) -> list:
+        """Fetch a page of stargazers, using cache to avoid duplicate requests."""
+        if page not in cache:
+            params = {"per_page": 100, "page": page}
+            async with self.bot.http_session.get(url, headers=headers, params=params) as response:
+                if response.status != 200:
+                    return []
+                cache[page] = await response.json()
+        return cache[page]
+
+    async def _get_date_at(self, url: str, headers: dict, i: int, cache: dict) -> str:
+        """Get the starred_at date (YYYY-MM-DD) of the star at global index i (0-based)."""
+        page = (i // 100) + 1
+        pos = i % 100
+        page_data = await self._fetch_page(url, headers, page, cache)
+
+        # FIX: Prevent IndexError if GitHub's cached count is higher than the actual list
+        if page_data and pos < len(page_data):
+            return page_data[pos].get("starred_at", "")[:10]
+        return ""
+
+    async def get_stars_gained(self, repo: str, start: str, end: str) -> int:
+        """Gets the number of stars gained for a given repository in a timeframe."""
+        url = f"{GITHUB_API_URL}/repos/{repo}/stargazers"
+
+        # Copy the global headers but update the Accept header specifically for Stargazers
+        star_headers = REQUEST_HEADERS.copy()
+        star_headers["Accept"] = "application/vnd.github.star+json"
+
+        repo_data, response = await self.fetch_data(f"{GITHUB_API_URL}/repos/{repo}")
+        if response.status != 200:
+            return -1
+
+        max_stars = repo_data.get("stargazers_count", 0)
+
+        if max_stars == 0:
+            return 0
+
+        # GitHub API limits stargazers pagination to 40 000 entries (page 400 max)
+        # Because of this the output is not consistent for projects with more than 40 000 stars so we default to -2
+        github_stargazer_limit = 40000
+        if max_stars > github_stargazer_limit:
+            return -2
+        searchable_stars = max_stars
+
+        # We use a cache and binary search to limit the number of requests to the GitHub API
+        cache = {}
+        low, high = 0, searchable_stars - 1
+        while low < high:
+            mid = (low + high) // 2
+            lowdate = await self._get_date_at(url, star_headers, mid, cache)
+            if lowdate == "":
+                return -1
+            if lowdate < start:
+                low = mid + 1
+            else:
+                high = mid
+        left = low
+
+        date_left = await self._get_date_at(url, star_headers, left, cache)
+        if date_left < start or date_left > end:
+            return 0
+
+        low, high = left, searchable_stars - 1
+        while low < high:
+            mid = (low + high + 1) // 2
+            highdate = await self._get_date_at(url, star_headers, mid, cache)
+            if highdate == "":
+                return -1
+            if highdate > end:
+                high = mid - 1
+            else:
+                low = mid
+        right = low
+
+        return right - left + 1
 
     @github_group.command(name="stats")
     async def github_stats(self, ctx: commands.Context, start: str, end: str, repo: str) -> None:
@@ -429,19 +513,24 @@ class GithubInfo(commands.Cog):
             prs_closed = await self.get_pr_count(repo, start, end, "closed")
             prs_merged = await self.get_pr_count(repo, start, end, "merged")
             commits = await self.get_commit_count(repo, start, end)
+            stars_gained = await self.get_stars_gained(repo, start, end)
 
-            stats_embed = discord.Embed(
-                title=f"Stats for {repo}",
-                description=f"Timeframe: `{start}` to `{end}`",
-                colour=Colours.grass_green,
-            )
+            if stars_gained == -2:
+                stars = "N/A (repo exceeds API limit)"
+            elif stars_gained > 0:
+                stars = f"+{stars_gained}"
+            elif stars_gained == 0:
+                stars = "0"
+            else:
+                stars = "unavailable"
+
             stats_text = (
                 f"Issues opened: {open_issues}\n"
                 f"Issues closed: {closed_issues}\n"
                 f"Pull Requests opened: {prs_opened}\n"
                 f"Pull Requests closed: {prs_closed}\n"
                 f"Pull Requests merged: {prs_merged}\n"
-                # f"**Stars gained:** {stars}\n"
+                f"Stars gained: {stars}\n"
                 f"Commits: {commits}"
             )
 
