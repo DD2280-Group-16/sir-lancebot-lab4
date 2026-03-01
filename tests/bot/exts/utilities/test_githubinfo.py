@@ -2,7 +2,10 @@ import unittest
 from unittest.mock import AsyncMock, MagicMock
 
 from bot.exts.utilities.githubinfo import GithubInfo
+<<<<<<< HEAD
 
+=======
+>>>>>>> 1641d55f7801668eecf8d9fc544ce605f428e410
 # from bot.exts.utilities.githubinfo import validate_date_format
 
 class TestGithubStatsFeatures(unittest.IsolatedAsyncioTestCase):
@@ -59,6 +62,7 @@ class TestGithubStatsFeatures(unittest.IsolatedAsyncioTestCase):
         result = await self.cog.get_issue_count("invalid/repo", "2023-01-01", "2023-12-31", "created")
         self.assertEqual(result, -1)
 
+<<<<<<< HEAD
     async def test_validate_date_accepts_valid_formats(self) -> None:
         """Valid date strings should be accepted."""
         valid_date = "2025-04-01"
@@ -67,11 +71,50 @@ class TestGithubStatsFeatures(unittest.IsolatedAsyncioTestCase):
     async def test_validate_date_range_accepts_correct_order(self) -> None:
         """The method should accept dates that are ordered correct."""
         result = self.cog.validate_date_range(
+=======
+class TestDateFormat(unittest.TestCase):
+    """Tests for validate_date_format."""
+
+    def test_validate_date_accepts_valid_formats(self) -> None:
+        """Valid date strings should be accepted."""
+        valid_date = "2025-04-01"
+        self.assertTrue(GithubInfo.validate_date_format(valid_date))
+
+    def test_validate_date_rejects_invalid_formats(self) -> None:
+        """Invalid date formats should be rejected."""
+        invalid_dates = (
+            "2025/04/01", # Invalid separator
+            "04-2025-01", # Wrong order
+            "2025.04.01", # Invalid separator
+            "2025-4-01", # Missing zero padding
+            "2025-04-1", # Missing zero padding
+            "2025-13-01", # Invalid month
+            "2025-04-32", # Invalid day
+            "2025-04.01", # Invalid separator
+            "2025.04-01", # Invalid separator
+            "cookie", # No date
+            "", # Empty string
+        )
+
+        for date_str in invalid_dates:
+            with self.subTest(date=date_str):
+                result = GithubInfo.validate_date_format(date_str)
+                self.assertFalse(result)
+                
+                
+class TestsValidDates(unittest.TestCase):
+    """Tests for validate_date_range."""
+
+    def test_validate_date_range_accepts_correct_order(self) -> None:
+        """The method should accept dates that are ordered correct."""
+        result = GithubInfo.validate_date_range(
+>>>>>>> 1641d55f7801668eecf8d9fc544ce605f428e410
             "2025-04-01",
             "2025-04-11",
         )
         self.assertTrue(result)
 
+<<<<<<< HEAD
     async def test_validate_date_range_rejects_wrong_order(self) -> None:
         """The method should reject dates that are ordered wrong."""
         result = self.cog.validate_date_range(
@@ -88,4 +131,20 @@ class TestGithubStatsFeatures(unittest.IsolatedAsyncioTestCase):
             "2025-04-01",
         )
 
+=======
+    def test_validate_date_range_rejects_wrong_order(self) -> None:
+        """The method should reject dates that are ordered wrong."""
+        result = GithubInfo.validate_date_range(
+            "2025-04-11",
+            "2025-04-01",
+        )
+        self.assertFalse(result)
+
+    def test_validate_date_range_accepts_same_day(self) -> None:
+        """The method should accept the same dates."""
+        result = GithubInfo.validate_date_range(
+            "2025-04-01",
+            "2025-04-01",
+        )
+>>>>>>> 1641d55f7801668eecf8d9fc544ce605f428e410
         self.assertTrue(result)
