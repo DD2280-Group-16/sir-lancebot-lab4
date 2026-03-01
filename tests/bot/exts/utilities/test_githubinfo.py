@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import AsyncMock, MagicMock
 
 from bot.exts.utilities.githubinfo import GithubInfo
+
 # from bot.exts.utilities.githubinfo import validate_date_format
 
 class TestGithubStatsFeatures(unittest.IsolatedAsyncioTestCase):
@@ -86,8 +87,8 @@ class TestDateFormat(unittest.TestCase):
             with self.subTest(date=date_str):
                 result = GithubInfo.validate_date_format(date_str)
                 self.assertFalse(result)
-                
-                
+
+
 class TestsValidDates(unittest.TestCase):
     """Tests for validate_date_range."""
 
