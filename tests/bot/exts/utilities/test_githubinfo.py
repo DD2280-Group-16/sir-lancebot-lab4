@@ -58,12 +58,12 @@ class TestGithubStatsFeatures(unittest.IsolatedAsyncioTestCase):
 
         result = await self.cog.get_issue_count("invalid/repo", "2023-01-01", "2023-12-31", "created")
         self.assertEqual(result, -1)
-        
+
     async def test_validate_date_accepts_valid_formats(self) -> None:
         """Valid date strings should be accepted."""
         valid_date = "2025-04-01"
         self.assertTrue(self, self.cog.validate_date_format(valid_date))
-        
+
     async def test_validate_date_range_accepts_correct_order(self) -> None:
         """The method should accept dates that are ordered correct."""
         result = self.cog.validate_date_range(
@@ -71,16 +71,16 @@ class TestGithubStatsFeatures(unittest.IsolatedAsyncioTestCase):
             "2025-04-11",
         )
         self.assertTrue(result)
-        
+
     async def test_validate_date_range_rejects_wrong_order(self) -> None:
         """The method should reject dates that are ordered wrong."""
         result = self.cog.validate_date_range(
             "2025-04-11",
             "2025-04-01",
         )
-        
+
         self.assertFalse(result)
-        
+
     async def test_validate_date_range_accepts_same_day(self) -> None:
         """The method should accept the same dates."""
         result = self.cog.validate_date_range(
