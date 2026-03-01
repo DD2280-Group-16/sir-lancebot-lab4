@@ -493,7 +493,7 @@ class GithubInfo(commands.Cog):
             return datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=UTC)
         except ValueError:
             return None
-
+    
     def validate_date_format(self, date_str: str) -> bool:
         """Validates that the date string is formatted correctly."""
         return self.parse_date(date_str) is not None
