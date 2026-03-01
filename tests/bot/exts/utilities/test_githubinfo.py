@@ -62,7 +62,7 @@ class TestGithubStatsFeatures(unittest.IsolatedAsyncioTestCase):
     async def test_validate_date_accepts_valid_formats(self) -> None:
         """Valid date strings should be accepted."""
         valid_date = "2025-04-01"
-        self.assertTrue(self, self.cog.validate_date_format(valid_date))
+        self.assertTrue(self.cog.validate_date_format(valid_date))
 
     async def test_validate_date_range_accepts_correct_order(self) -> None:
         """The method should accept dates that are ordered correct."""
