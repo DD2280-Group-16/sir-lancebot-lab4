@@ -29,15 +29,15 @@ Oskar:
 Markus:
 
 1. Around 4h  
-2. 2h 
-3. Around 10 min for every implementation  
+2. 4h 
+3. 1h 
 4. About 1h:  
    1. Python 3.14  
    2. Docker  
    3. Setting up the bot on discord developer site  
    4. Get the bot running  
-5. Maybe 5-10 min for every implementation  
-6. 1h so far \+ creating the issues  
+5. 1h
+6. 2h 
 7. 12.0 h (lost track)  
 8. 10-30 min running code
 
