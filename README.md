@@ -26,3 +26,6 @@ See [Sir Lancebot's Wiki](https://pythondiscord.com/pages/contributing/sir-lance
 [2]:https://github.com/python-discord/sir-lancebot/actions?query=workflow%3ACI+branch%3Amain
 [3]: https://raw.githubusercontent.com/python-discord/branding/main/logos/badge/badge_github.svg
 [4]: https://discord.gg/python
+
+## Report 
+The report for the assignment can be found [here](https://github.com/DD2280-Group-16/sir-lancebot-lab4/blob/aec2727f46e96e838e77a7554fc34592282edb9d/Report%20for%20assignment%204%20-%20Group%2016.pdf).
