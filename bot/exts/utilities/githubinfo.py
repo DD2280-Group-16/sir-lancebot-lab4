@@ -434,27 +434,29 @@ class GithubInfo(commands.Cog):
 
             # Grabbing the number of pages from the Link header
             match = re.search(r'page=(\d+)>; rel="last"', link_header)
-
             if match:
                 return int(match.group(1))
 
-            return 1
+            # If we reach here, GitHub sent a Link header but our regex couldn't parse it.
+            # This is an unexpected API failure, so we raise an exception!
+            raise GithubAPIError(500, "Failed to parse pagination Link header for commits.")
 
-    async def _fetch_page(self, url: str, headers: dict, page: int, cache: dict) -> list:
+    async def _fetch_page(self, url: str, page: int, cache: dict) -> list:
         """Fetch a page of stargazers, using cache to avoid duplicate requests."""
         if page not in cache:
             params = {"per_page": 100, "page": page}
+            headers = REQUEST_HEADERS | {"Accept": "application/vnd.github.star+json"}
             async with self.bot.http_session.get(url, headers=headers, params=params) as response:
                 if response.status != 200:
                     raise GithubAPIError(response.status)
                 cache[page] = await response.json()
         return cache[page]
 
-    async def _get_date_at(self, url: str, headers: dict, i: int, cache: dict) -> str:
+    async def _get_date_at(self, url: str, i: int, cache: dict) -> str:
         """Get the starred_at date (YYYY-MM-DD) of the star at global index i (0-based)."""
         page = (i // 100) + 1
         pos = i % 100
-        page_data = await self._fetch_page(url, headers, page, cache)
+        page_data = await self._fetch_page(url, page, cache)
 
         # FIX: Prevent IndexError if GitHub's cached count is higher than the actual list
         if page_data and pos < len(page_data):
@@ -464,10 +466,6 @@ class GithubInfo(commands.Cog):
     async def get_stars_gained(self, repo: str, start: str, end: str) -> int:
         """Gets the number of stars gained for a given repository in a timeframe."""
         url = f"{GITHUB_API_URL}/repos/{repo}/stargazers"
-
-        # Copy the global headers but update the Accept header specifically for Stargazers
-        star_headers = REQUEST_HEADERS.copy()
-        star_headers["Accept"] = "application/vnd.github.star+json"
 
         repo_data, response = await self.fetch_data(f"{GITHUB_API_URL}/repos/{repo}")
         if response.status != 200:
@@ -490,25 +488,25 @@ class GithubInfo(commands.Cog):
         low, high = 0, searchable_stars - 1
         while low < high:
             mid = (low + high) // 2
-            lowdate = await self._get_date_at(url, star_headers, mid, cache)
+            lowdate = await self._get_date_at(url, mid, cache)
             if lowdate == "":
-                return -1
+                raise GithubAPIError(500, "Failed to fetch stargazer date during binary search")
             if lowdate < start:
                 low = mid + 1
             else:
                 high = mid
         left = low
 
-        date_left = await self._get_date_at(url, star_headers, left, cache)
+        date_left = await self._get_date_at(url, left, cache)
         if date_left < start or date_left > end:
             return 0
 
         low, high = left, searchable_stars - 1
         while low < high:
             mid = (low + high + 1) // 2
-            highdate = await self._get_date_at(url, star_headers, mid, cache)
+            highdate = await self._get_date_at(url, mid, cache)
             if highdate == "":
-                return -1
+                raise GithubAPIError(500, "Failed to fetch stargazer date during binary search")
             if highdate > end:
                 high = mid - 1
             else:
