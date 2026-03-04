@@ -4,6 +4,7 @@ import re
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Literal
 from urllib.parse import quote
 
 import discord
@@ -377,10 +378,10 @@ class GithubInfo(commands.Cog):
         )
         return embed
 
-    async def get_issue_count(self, repo: str, start: str, end: str, state: str) -> int:
+    async def get_issue_count(self, repo: str, start: str, end: str, action: Literal["created", "closed"]) -> int:
         """Gets the number of issues opened or closed (based on state) in a given timeframe."""
         url = f"{GITHUB_API_URL}/search/issues"
-        query = f"repo:{repo} is:issue {state}:{start}..{end}"
+        query = f"repo:{repo} is:issue {action}:{start}..{end}"
         params = {"q": query}
 
         async with self.bot.http_session.get(url, headers=REQUEST_HEADERS, params=params) as response:
@@ -389,20 +390,17 @@ class GithubInfo(commands.Cog):
             data = await response.json()
             return data.get("total_count", 0)
 
-    async def get_pr_count(self, repo: str, start: str, end: str, action: str) -> int:
+    async def get_pr_count(self, repo: str, start: str, end: str, action: Literal["opened", "merged", "closed"]) -> int:
         """Gets the number of PRs opened, closed, or merged in a given timeframe."""
         url = f"{GITHUB_API_URL}/search/issues"
 
-        if action == "opened":
-            state_query = f"created:{start}..{end}"
-        elif action == "merged":
-            state_query = f"is:merged merged:{start}..{end}"
-        elif action == "closed":
-            state_query = f"is:unmerged closed:{start}..{end}"
-        else:
-            return 0
+        state_query = {
+            "opened": f"created:{start}..{end}",
+            "merged": f"is:merged merged:{start}..{end}",
+            "closed": f"is:unmerged closed:{start}..{end}"
+        }
 
-        query = f"repo:{repo} is:pr {state_query}"
+        query = f"repo:{repo} is:pr {state_query[action]}"
         params = {"q": query}
 
         async with self.bot.http_session.get(url, headers=REQUEST_HEADERS, params=params) as response:
@@ -589,8 +587,8 @@ class GithubInfo(commands.Cog):
                 return
 
             try:
-                open_issues = await self.get_issue_count(repo, start, end, state="created")
-                closed_issues = await self.get_issue_count(repo, start, end, state="closed")
+                open_issues = await self.get_issue_count(repo, start, end, action="created")
+                closed_issues = await self.get_issue_count(repo, start, end, action="closed")
                 prs_opened = await self.get_pr_count(repo, start, end, "opened")
                 prs_closed = await self.get_pr_count(repo, start, end, "closed")
                 prs_merged = await self.get_pr_count(repo, start, end, "merged")
